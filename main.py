@@ -1,19 +1,9 @@
-import json
 import logging
 import time
-from datetime import datetime
 
 import requests
 
-datestr = datetime.today().strftime("%Y%m%d")
-logger = logging.getLogger(__name__)
-logger.propagate = False
-logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler(f'coldfront/plugins/sftocf/data/logs/sfc{datestr}.log', 'w')
-logger.addHandler(filehandler)
-
-with open("coldfront/plugins/sftocf/servers.json", "r") as myfile:
-    svp = json.loads(myfile.read())
+logger = logging.getLogger('starfish_client')
 
 
 class StarFishServer:
