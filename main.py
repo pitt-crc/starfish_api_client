@@ -17,8 +17,7 @@ with open("coldfront/plugins/sftocf/servers.json", "r") as myfile:
 
 
 class StarFishServer:
-    """Class for interacting with StarFish API.
-    """
+    """Class for interacting with a StarFish API server."""
 
     def __init__(self, api_url: str) -> None:
         """Initialize a new Server instance
@@ -28,27 +27,28 @@ class StarFishServer:
         """
 
         self.api_url = api_url
-        self.token = self.get_auth_token()
+        self._token = None
         self._headers = {
             "accept": "application/json",
             "Authorization": "Bearer {}".format(self.token),
         }
 
-    def get_auth_token(self):
-        """Obtain a token through the auth endpoint.
+    def authenticate(self, username: str, password: str) -> None:
+        """Authenticate against the StarFish API
+
+        Args:
+            username: Authentication username
+            password: Authentication password
+
+        Raises:
+            HTTPError: When the authentication request errors out or is unsuccessful
         """
 
-        username = import_from_settings('SFUSER')
-        password = import_from_settings('SFPASS')
         auth_url = self.api_url + "auth/"
-        todo = {"username": username, "password": password}
-        response = requests.post(auth_url, json=todo)
-        # response.status_code
-        response_json = response.json()
-        token = response_json["token"]
-        return token
-
-    # 2A. Generate list of volumes to search, along with top-level paths
+        payload = {"username": username, "password": password}
+        response = requests.post(auth_url, json=payload)
+        response.raise_for_status()
+        self._token = response.json()["token"]
 
     def get_volume_names(self):
         """ Generate a list of the volumes available on the server.
