@@ -28,9 +28,25 @@ class StarFishServer:
 
         self.api_url = api_url
         self._token = None
-        self._headers = {
+
+    def _get_headers(self) -> dict:
+        """Return headers to include when submitting API requests
+
+        This method requires the parent instance to be authenticated against the API server.
+
+        Returns:
+            A dictionary with request headers
+
+        Raises:
+            RuntimeError: If the parent instance is not already authenticate.
+        """
+
+        if self._token is None:
+            raise RuntimeError('Server is not authenticated')
+
+        return {
             "accept": "application/json",
-            "Authorization": "Bearer {}".format(self.token),
+            "Authorization": "Bearer {}".format(self._token),
         }
 
     def authenticate(self, username: str, password: str) -> None:
@@ -54,7 +70,7 @@ class StarFishServer:
         """ Generate a list of the volumes available on the server.
         """
         stor_url = self.api_url + "storage/"
-        response = return_get_json(stor_url, self._headers)
+        response = return_get_json(stor_url, self._get_headers())
         volnames = [i["name"] for i in response["items"]]
         return volnames
 
@@ -69,7 +85,7 @@ class StarFishServer:
         subpaths : list of strings
         """
         getsubpaths_url = self.api_url + "storage/" + volpath
-        request = return_get_json(getsubpaths_url, self._headers)
+        request = return_get_json(getsubpaths_url, self._get_headers())
         pathdicts = request["items"]
         subpaths = [i["Basename"] for i in pathdicts]
         return subpaths
@@ -88,7 +104,7 @@ class StarFishServer:
         query : Query class object
         """
         query = StarFishQuery(
-            self._headers, self.api_url, query, group_by, volpath, sec=sec
+            self._get_headers(), self.api_url, query, group_by, volpath, sec=sec
         )
         return query
 
@@ -96,7 +112,7 @@ class StarFishServer:
         """Get the membership of the provided volume.
         """
         url = self.api_url + f"mapping/{mtype}_membership?volume_name=" + volume
-        member_list = return_get_json(url, self._headers)
+        member_list = return_get_json(url, self._get_headers())
         return member_list
 
 
