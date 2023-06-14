@@ -153,7 +153,7 @@ class StarFishServer:
         return [item["Basename"] for item in response.json()["items"]]
 
     # Todo: Update docstring and signature after revising the StarFishQuery class
-    def submit_query(self, query: str, group_by: str, volpath: str, sec=3) -> StarFishQuery:
+    def submit_query(self, query: str, group_by: str, volpath: str, sec: int = 3) -> StarFishQuery:
         """Submit a new API query
 
         Args:
