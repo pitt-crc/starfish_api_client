@@ -56,12 +56,12 @@ class StarFishQuery:
         return response["query_id"]
 
     def return_results_once_prepared(self, sec=3):
-        """Wait for posted query to return result.
-        """
+        """Wait for posted query to return result."""
+
         while True:
             query_check_url = self.api_url + "async/query/" + self.query_id
-            response = return_get_json(query_check_url, self.headers)
-            if response["is_done"] == True:
+            response = requests.get(query_check_url, self.headers)
+            if response.json()["is_done"]:
                 result = self.return_query_result()
                 return result
             time.sleep(sec)
@@ -70,8 +70,9 @@ class StarFishQuery:
         """Go to link for query result and return the JSON.
         """
         query_result_url = self.api_url + "async/query_result/" + self.query_id
-        response = return_get_json(query_result_url, self.headers)
-        return response
+        response = requests.get(query_result_url, self.headers)
+        response.raise_for_status()
+        return response.json()
 
 
 class StarFishServer:
@@ -166,10 +167,3 @@ class StarFishServer:
         """
 
         return StarFishQuery(self._get_headers(), self.api_url, query, group_by, volpath, sec=sec)
-
-
-def return_get_json(url, headers):
-    """return JSON from the designated url using the designated headers.
-    """
-    response = requests.get(url, headers=headers)
-    return response.json()
