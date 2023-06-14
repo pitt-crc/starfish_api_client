@@ -152,18 +152,18 @@ class StarFishServer:
         response.raise_for_status()
         return [item["Basename"] for item in response.json()["items"]]
 
-    def create_query(self, query, group_by, volpath, sec=3) -> StarFishQuery:
-        """Produce a Query class object.
-        Parameters
-        ----------
-        query : string
-        group_by : string
-        volpath : string
-        sec : integer, optional
+    # Todo: Update docstring and signature after revising the StarFishQuery class
+    def submit_query(self, query: str, group_by: str, volpath: str, sec=3) -> StarFishQuery:
+        """Submit a new API query
 
-        Returns
-        -------
-        query : Query class object
+        Args:
+            query: The query to execute
+            group_by:
+            volpath:
+            sec:
+
+        Returns:
+            A ``StarFishQuery`` instance representing the submitted query
         """
 
         return StarFishQuery(self._get_headers(), self.api_url, query, group_by, volpath, sec=sec)
