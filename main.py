@@ -97,17 +97,7 @@ class StarFishServer:
         query : Query class object
         """
 
-        query = StarFishQuery(
-            self._get_headers(), self.api_url, query, group_by, volpath, sec=sec
-        )
-        return query
-
-    def get_vol_membership(self, volume, mtype):
-        """Get the membership of the provided volume.
-        """
-        url = self.api_url + f"mapping/{mtype}_membership?volume_name=" + volume
-        member_list = return_get_json(url, self._get_headers())
-        return member_list
+        return StarFishQuery(self._get_headers(), self.api_url, query, group_by, volpath, sec=sec)
 
 
 class StarFishQuery:
