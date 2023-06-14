@@ -57,7 +57,7 @@ class StarFishServer:
         self._token = response.json()["token"]
 
     def get_volume_names(self) -> list[str]:
-        """ Generate a list of the volumes available on the server.
+        """Return a list of volume names accessible via the API server
 
         Returns:
             A list of volume names returned by the API
@@ -68,21 +68,20 @@ class StarFishServer:
         response.raise_for_status()
         return [item["name"] for item in response.json()["items"]]
 
-    def get_subpaths(self, volpath):
-        """Generate list of directories in top layer of designated volpath.
-        Parameters
-        ----------
-        volpath : string
-            The volume and path.
-        Returns
-        -------
-        subpaths : list of strings
+    def get_subpaths(self, volpath: str) -> list[str]:
+        """Return a list of top level directories located under the given volume path
+
+        Args:
+            volpath: The volume and path.
+
+        Returns:
+            A list of directory names as strings
         """
+
         getsubpaths_url = self.api_url + "storage/" + volpath
-        request = return_get_json(getsubpaths_url, self._get_headers())
-        pathdicts = request["items"]
-        subpaths = [i["Basename"] for i in pathdicts]
-        return subpaths
+        response = requests.get(getsubpaths_url, headers=self._get_headers())
+        response.raise_for_status()
+        return [item["Basename"] for item in response.json()["items"]]
 
     def create_query(self, query, group_by, volpath, sec=3):
         """Produce a Query class object.
@@ -97,6 +96,7 @@ class StarFishServer:
         -------
         query : Query class object
         """
+
         query = StarFishQuery(
             self._get_headers(), self.api_url, query, group_by, volpath, sec=sec
         )
