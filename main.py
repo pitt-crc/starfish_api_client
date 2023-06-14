@@ -6,6 +6,74 @@ import requests
 logger = logging.getLogger('starfish_client')
 
 
+class StarFishQuery:
+    """
+
+    Attributes
+    ----------
+    api_url : str
+    headers : dict
+    query_id : str
+    result : list
+
+    Methods
+    -------
+    post_async_query(query, group_by, volpath)
+    return_results_once_prepared(sec=3)
+    return_query_result()
+    """
+
+    def __init__(self, headers, api_url, query, group_by, volpath, sec=3):
+        self.api_url = api_url
+        self.headers = headers
+        self.query_id = self.post_async_query(query, group_by, volpath)
+        self.result = self.return_results_once_prepared(sec=sec)
+
+    def post_async_query(self, query, group_by, volpath):
+        """Post an asynchronous query through the Starfish API.
+        """
+        query_url = self.api_url + "async/query/"
+
+        params = {
+            "volumes_and_paths": volpath,
+            "queries": query,
+            "format": "parent_path fn type size blck ct mt at uid gid mode",
+            "sort_by": group_by,
+            "group_by": group_by,
+            "limit": "100000",
+            "force_tag_inherit": "false",
+            "output_format": "json",
+            "delimiter": ",",
+            "escape_paths": "false",
+            "print_headers": "true",
+            "size_unit": "B",
+            "humanize_nested": "false",
+            "mount_agent": "None",
+        }
+        req = requests.post(query_url, params=params, headers=self.headers)
+        response = req.json()
+        logger.debug("response: %s", response)
+        return response["query_id"]
+
+    def return_results_once_prepared(self, sec=3):
+        """Wait for posted query to return result.
+        """
+        while True:
+            query_check_url = self.api_url + "async/query/" + self.query_id
+            response = return_get_json(query_check_url, self.headers)
+            if response["is_done"] == True:
+                result = self.return_query_result()
+                return result
+            time.sleep(sec)
+
+    def return_query_result(self):
+        """Go to link for query result and return the JSON.
+        """
+        query_result_url = self.api_url + "async/query_result/" + self.query_id
+        response = return_get_json(query_result_url, self.headers)
+        return response
+
+
 class StarFishServer:
     """Class for interacting with a StarFish API server."""
 
@@ -83,7 +151,7 @@ class StarFishServer:
         response.raise_for_status()
         return [item["Basename"] for item in response.json()["items"]]
 
-    def create_query(self, query, group_by, volpath, sec=3):
+    def create_query(self, query, group_by, volpath, sec=3) -> StarFishQuery:
         """Produce a Query class object.
         Parameters
         ----------
@@ -98,74 +166,6 @@ class StarFishServer:
         """
 
         return StarFishQuery(self._get_headers(), self.api_url, query, group_by, volpath, sec=sec)
-
-
-class StarFishQuery:
-    """
-
-    Attributes
-    ----------
-    api_url : str
-    headers : dict
-    query_id : str
-    result : list
-
-    Methods
-    -------
-    post_async_query(query, group_by, volpath)
-    return_results_once_prepared(sec=3)
-    return_query_result()
-    """
-
-    def __init__(self, headers, api_url, query, group_by, volpath, sec=3):
-        self.api_url = api_url
-        self.headers = headers
-        self.query_id = self.post_async_query(query, group_by, volpath)
-        self.result = self.return_results_once_prepared(sec=sec)
-
-    def post_async_query(self, query, group_by, volpath):
-        """Post an asynchronous query through the Starfish API.
-        """
-        query_url = self.api_url + "async/query/"
-
-        params = {
-            "volumes_and_paths": volpath,
-            "queries": query,
-            "format": "parent_path fn type size blck ct mt at uid gid mode",
-            "sort_by": group_by,
-            "group_by": group_by,
-            "limit": "100000",
-            "force_tag_inherit": "false",
-            "output_format": "json",
-            "delimiter": ",",
-            "escape_paths": "false",
-            "print_headers": "true",
-            "size_unit": "B",
-            "humanize_nested": "false",
-            "mount_agent": "None",
-        }
-        req = requests.post(query_url, params=params, headers=self.headers)
-        response = req.json()
-        logger.debug("response: %s", response)
-        return response["query_id"]
-
-    def return_results_once_prepared(self, sec=3):
-        """Wait for posted query to return result.
-        """
-        while True:
-            query_check_url = self.api_url + "async/query/" + self.query_id
-            response = return_get_json(query_check_url, self.headers)
-            if response["is_done"] == True:
-                result = self.return_query_result()
-                return result
-            time.sleep(sec)
-
-    def return_query_result(self):
-        """Go to link for query result and return the JSON.
-        """
-        query_result_url = self.api_url + "async/query_result/" + self.query_id
-        response = return_get_json(query_result_url, self.headers)
-        return response
 
 
 def return_get_json(url, headers):
