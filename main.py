@@ -66,13 +66,17 @@ class StarFishServer:
         response.raise_for_status()
         self._token = response.json()["token"]
 
-    def get_volume_names(self):
+    def get_volume_names(self) -> list[str]:
         """ Generate a list of the volumes available on the server.
+
+        Returns:
+            A list of volume names returned by the API
         """
-        stor_url = self.api_url + "storage/"
-        response = return_get_json(stor_url, self._get_headers())
-        volnames = [i["name"] for i in response["items"]]
-        return volnames
+
+        storage_url = self.api_url + "storage/"
+        response = requests.get(storage_url, headers=self._get_headers())
+        response.raise_for_status()
+        return [item["name"] for item in response.json()["items"]]
 
     def get_subpaths(self, volpath):
         """Generate list of directories in top layer of designated volpath.
