@@ -20,16 +20,24 @@ class StarFishServer:
     """Class for interacting with StarFish API.
     """
 
-    def __init__(self, server, url):
-        self.name = server
-        self.api_url = f"{url}/api/"
+    def __init__(self, api_url: str) -> None:
+        """Initialize a new Server instance
+
+        Args:
+            api_url: The Starfish API URL, typically ending in /api/
+        """
+
+        self.api_url = api_url
         self.token = self.get_auth_token()
-        self.headers = generate_headers(self.token)
-        self.volumes = self.get_volume_names()
+        self._headers = {
+            "accept": "application/json",
+            "Authorization": "Bearer {}".format(self.token),
+        }
 
     def get_auth_token(self):
         """Obtain a token through the auth endpoint.
         """
+
         username = import_from_settings('SFUSER')
         password = import_from_settings('SFPASS')
         auth_url = self.api_url + "auth/"
@@ -46,7 +54,7 @@ class StarFishServer:
         """ Generate a list of the volumes available on the server.
         """
         stor_url = self.api_url + "storage/"
-        response = return_get_json(stor_url, self.headers)
+        response = return_get_json(stor_url, self._headers)
         volnames = [i["name"] for i in response["items"]]
         return volnames
 
@@ -61,7 +69,7 @@ class StarFishServer:
         subpaths : list of strings
         """
         getsubpaths_url = self.api_url + "storage/" + volpath
-        request = return_get_json(getsubpaths_url, self.headers)
+        request = return_get_json(getsubpaths_url, self._headers)
         pathdicts = request["items"]
         subpaths = [i["Basename"] for i in pathdicts]
         return subpaths
@@ -80,7 +88,7 @@ class StarFishServer:
         query : Query class object
         """
         query = StarFishQuery(
-            self.headers, self.api_url, query, group_by, volpath, sec=sec
+            self._headers, self.api_url, query, group_by, volpath, sec=sec
         )
         return query
 
@@ -88,7 +96,7 @@ class StarFishServer:
         """Get the membership of the provided volume.
         """
         url = self.api_url + f"mapping/{mtype}_membership?volume_name=" + volume
-        member_list = return_get_json(url, self.headers)
+        member_list = return_get_json(url, self._headers)
         return member_list
 
 
@@ -165,13 +173,3 @@ def return_get_json(url, headers):
     """
     response = requests.get(url, headers=headers)
     return response.json()
-
-
-def generate_headers(token):
-    """Generate "headers" attribute by using the "token" attribute.
-    """
-    headers = {
-        "accept": "application/json",
-        "Authorization": "Bearer {}".format(token),
-    }
-    return headers
