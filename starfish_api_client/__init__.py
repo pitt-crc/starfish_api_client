@@ -1,7 +1,14 @@
 import asyncio
+import importlib.metadata
 import logging
 
 import requests
+
+try:
+    __version__ = importlib.metadata.version('quota-notifier')
+
+except importlib.metadata.PackageNotFoundError:  # pragma: no cover
+    __version__ = '0.0.0'
 
 logger = logging.getLogger('starfish_api_client')
 
