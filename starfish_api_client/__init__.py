@@ -6,7 +6,7 @@ import requests
 logger = logging.getLogger('starfish_client')
 
 
-class StarFishQuery:
+class StarfishQuery:
 
     def __init__(self, headers, api_url, query, group_by, volpath):
         self.api_url = api_url
@@ -14,7 +14,7 @@ class StarFishQuery:
         self.query_id = self.post_async_query(query, group_by, volpath)
         self._result = None
 
-    # Todo: This method belongs in the StarFishServer class
+    # Todo: This method belongs in the StarfishServer class
     def post_async_query(self, query, group_by, volpath):
         """Post an asynchronous query through the Starfish API."""
 
@@ -73,8 +73,8 @@ class StarFishQuery:
         return asyncio.run(self.get_result_async(sec=sec))
 
 
-class StarFishServer:
-    """Class for interacting with a StarFish API server."""
+class StarfishServer:
+    """Class for interacting with a Starfish API server."""
 
     def __init__(self, api_url: str) -> None:
         """Initialize a new Server instance
@@ -107,7 +107,7 @@ class StarFishServer:
         }
 
     def authenticate(self, username: str, password: str) -> None:
-        """Authenticate against the StarFish API
+        """Authenticate against the Starfish API
 
         Args:
             username: Authentication username
@@ -150,8 +150,8 @@ class StarFishServer:
         response.raise_for_status()
         return [item["Basename"] for item in response.json()["items"]]
 
-    # Todo: Update docstring and signature after revising the StarFishQuery class
-    def submit_query(self, query: str, group_by: str, volpath: str) -> StarFishQuery:
+    # Todo: Update docstring and signature after revising the StarfishQuery class
+    def submit_query(self, query: str, group_by: str, volpath: str) -> StarfishQuery:
         """Submit a new API query
 
         Args:
@@ -160,7 +160,7 @@ class StarFishServer:
             volpath:
 
         Returns:
-            A ``StarFishQuery`` instance representing the submitted query
+            A ``StarfishQuery`` instance representing the submitted query
         """
 
-        return StarFishQuery(self._get_headers(), self.api_url, query, group_by, volpath)
+        return StarfishQuery(self._get_headers(), self.api_url, query, group_by, volpath)

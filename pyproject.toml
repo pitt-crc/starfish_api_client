@@ -1,16 +1,18 @@
-[tool.poetry]
-name = "starfish-api-client"
-version = "0.1.0"
-description = "A Lightweight Python client for the Starfish API."
-authors = ["Your Name <you@example.com>"]
-license = "GPLv3"
-readme = "README.md"
-packages = [{include = "starfish_api_client"}]
-
-[tool.poetry.dependencies]
-python = "^3.8"
-
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "starfish-api-client"
+version = "0.0.0"  # Version is set dynamically by the CI tool on publication
+authors = ["Pitt Center for Research Computing", ]
+readme = "README.md"
+description = "A Lightweight Python client for the Starfish API."
+homepage = "https://github.com/pitt-crc/starfish_api_client"
+repository = "https://github.com/pitt-crc/starfish_api_client"
+documentation = "https://crc-pages.pitt.edu/starfish_api_client/"
+keywords = ["disk", "usage", "quota", "notify", "email", ]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.31.0"
