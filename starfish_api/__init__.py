@@ -1,5 +1,5 @@
+import asyncio
 import logging
-import time
 
 import requests
 
@@ -7,31 +7,17 @@ logger = logging.getLogger('starfish_client')
 
 
 class StarFishQuery:
-    """
 
-    Attributes
-    ----------
-    api_url : str
-    headers : dict
-    query_id : str
-    result : list
-
-    Methods
-    -------
-    post_async_query(query, group_by, volpath)
-    return_results_once_prepared(sec=3)
-    return_query_result()
-    """
-
-    def __init__(self, headers, api_url, query, group_by, volpath, sec=3):
+    def __init__(self, headers, api_url, query, group_by, volpath):
         self.api_url = api_url
         self.headers = headers
         self.query_id = self.post_async_query(query, group_by, volpath)
-        self.result = self.return_results_once_prepared(sec=sec)
+        self._result = None
 
+    # Todo: This method belongs in the StarFishServer class
     def post_async_query(self, query, group_by, volpath):
-        """Post an asynchronous query through the Starfish API.
-        """
+        """Post an asynchronous query through the Starfish API."""
+
         query_url = self.api_url + "async/query/"
 
         params = {
@@ -50,29 +36,41 @@ class StarFishQuery:
             "humanize_nested": "false",
             "mount_agent": "None",
         }
+
         req = requests.post(query_url, params=params, headers=self.headers)
         response = req.json()
         logger.debug("response: %s", response)
         return response["query_id"]
 
-    def return_results_once_prepared(self, sec=3):
-        """Wait for posted query to return result."""
+    async def _check_query_result_ready(self, query_status_url):
+        status_response = requests.get(query_status_url, self.headers)
+        status_response.raise_for_status()
+        ready = status_response.json()["is_done"]
+        return ready
 
-        while True:
-            query_check_url = self.api_url + "async/query/" + self.query_id
-            response = requests.get(query_check_url, self.headers)
-            if response.json()["is_done"]:
-                result = self.return_query_result()
-                return result
-            time.sleep(sec)
+    async def _get_query_result(self):
 
-    def return_query_result(self):
-        """Go to link for query result and return the JSON.
-        """
         query_result_url = self.api_url + "async/query_result/" + self.query_id
         response = requests.get(query_result_url, self.headers)
         response.raise_for_status()
-        return response.json()
+        self._result = response.json()
+        return self._result
+
+    async def get_result_async(self, sec=3):
+        if self._result is not None:
+            return self._result
+
+        query_status_url = self.api_url + "async/query/" + self.query_id
+        while True:
+            if await self._check_query_result_ready(query_status_url):
+                return await self._get_query_result()
+
+            await asyncio.sleep(sec)
+
+    def get_result(self, sec=3):
+        """Wait for posted query to return result."""
+
+        return asyncio.run(self.get_result_async(sec=sec))
 
 
 class StarFishServer:
@@ -147,23 +145,22 @@ class StarFishServer:
             A list of directory names as strings
         """
 
-        getsubpaths_url = self.api_url + "storage/" + volpath
-        response = requests.get(getsubpaths_url, headers=self._get_headers())
+        storage_url = self.api_url + "storage/" + volpath
+        response = requests.get(storage_url, headers=self._get_headers())
         response.raise_for_status()
         return [item["Basename"] for item in response.json()["items"]]
 
     # Todo: Update docstring and signature after revising the StarFishQuery class
-    def submit_query(self, query: str, group_by: str, volpath: str, sec: int = 3) -> StarFishQuery:
+    def submit_query(self, query: str, group_by: str, volpath: str) -> StarFishQuery:
         """Submit a new API query
 
         Args:
             query: The query to execute
             group_by:
             volpath:
-            sec:
 
         Returns:
             A ``StarFishQuery`` instance representing the submitted query
         """
 
-        return StarFishQuery(self._get_headers(), self.api_url, query, group_by, volpath, sec=sec)
+        return StarFishQuery(self._get_headers(), self.api_url, query, group_by, volpath)
