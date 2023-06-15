@@ -7,51 +7,28 @@ logger = logging.getLogger('starfish_client')
 
 
 class StarfishQuery:
+    """An asynchronous query submitted to a Starfish API server"""
 
-    def __init__(self, headers, api_url, query, group_by, volpath):
-        self.api_url = api_url
-        self.headers = headers
-        self.query_id = self.post_async_query(query, group_by, volpath)
+    def __init__(self, api_url: str, headers: dict[str, str], query_id: str) -> None:
+        self._api_url = api_url
+        self._headers = headers
+        self._query_id = query_id
         self._result = None
 
-    # Todo: This method belongs in the StarfishServer class
-    def post_async_query(self, query, group_by, volpath):
-        """Post an asynchronous query through the Starfish API."""
-
-        query_url = self.api_url + "async/query/"
-
-        params = {
-            "volumes_and_paths": volpath,
-            "queries": query,
-            "format": "parent_path fn type size blck ct mt at uid gid mode",
-            "sort_by": group_by,
-            "group_by": group_by,
-            "limit": "100000",
-            "force_tag_inherit": "false",
-            "output_format": "json",
-            "delimiter": ",",
-            "escape_paths": "false",
-            "print_headers": "true",
-            "size_unit": "B",
-            "humanize_nested": "false",
-            "mount_agent": "None",
-        }
-
-        req = requests.post(query_url, params=params, headers=self.headers)
-        response = req.json()
-        logger.debug("response: %s", response)
-        return response["query_id"]
+    @property
+    def query_id(self) -> str:
+        return self._query_id
 
     async def _check_query_result_ready(self, query_status_url):
-        status_response = requests.get(query_status_url, self.headers)
+        status_response = requests.get(query_status_url, self._headers)
         status_response.raise_for_status()
         ready = status_response.json()["is_done"]
         return ready
 
     async def _get_query_result(self):
 
-        query_result_url = self.api_url + "async/query_result/" + self.query_id
-        response = requests.get(query_result_url, self.headers)
+        query_result_url = self._api_url + "async/query_result/" + self.query_id
+        response = requests.get(query_result_url, self._headers)
         response.raise_for_status()
         self._result = response.json()
         return self._result
@@ -60,7 +37,7 @@ class StarfishQuery:
         if self._result is not None:
             return self._result
 
-        query_status_url = self.api_url + "async/query/" + self.query_id
+        query_status_url = self._api_url + "async/query/" + self.query_id
         while True:
             if await self._check_query_result_ready(query_status_url):
                 return await self._get_query_result()
@@ -163,4 +140,25 @@ class StarfishServer:
             A ``StarfishQuery`` instance representing the submitted query
         """
 
-        return StarfishQuery(self._get_headers(), self.api_url, query, group_by, volpath)
+        query_url = self.api_url + "async/query/"
+        params = {
+            "volumes_and_paths": volpath,
+            "queries": query,
+            "format": "parent_path fn type size blck ct mt at uid gid mode",
+            "sort_by": group_by,
+            "group_by": group_by,
+            "limit": "100000",
+            "force_tag_inherit": "false",
+            "output_format": "json",
+            "delimiter": ",",
+            "escape_paths": "false",
+            "print_headers": "true",
+            "size_unit": "B",
+            "humanize_nested": "false",
+            "mount_agent": "None",
+        }
+
+        req = requests.post(query_url, params=params, headers=self._get_headers())
+        response = req.json()
+        response.raise_for_status()
+        return StarfishQuery(self.api_url, self._get_headers(), response["query_id"])
