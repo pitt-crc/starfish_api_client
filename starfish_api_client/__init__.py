@@ -37,6 +37,8 @@ class AsyncQuery:
         """
 
         query_status_url = self._api_url + "async/query/" + self.query_id
+
+        logging.debug(f'Polling query result for query {self.query_id} ...')
         status_response = requests.get(query_status_url, self._headers)
         status_response.raise_for_status()
         return status_response.json()["is_done"]
@@ -52,6 +54,8 @@ class AsyncQuery:
         """
 
         query_result_url = self._api_url + "async/query_result/" + self.query_id
+
+        logging.debug(f'Fetching query result for query {self.query_id} ...')
         response = requests.get(query_result_url, self._headers)
         response.raise_for_status()
         self._result = response.json()
@@ -67,11 +71,14 @@ class AsyncQuery:
             polling: Frequency in seconds to poll the API server for query results
         """
 
+        logging.info(f'Checking query result for query {self.query_id} ...')
         if self._result is not None:
+            logging.debug(f'Query {self.query_id} is already cached')
             return self._result
 
         while True:
             if await self._check_query_result_ready():
+                logging.debug(f'Query {self.query_id} is ready')
                 return await self._get_query_result()
 
             await asyncio.sleep(polling)
@@ -135,8 +142,12 @@ class StarfishServer:
 
         auth_url = self.api_url + "auth/"
         payload = {"username": username, "password": password}
+
+        logger.info(f'Authenticating against server {self.api_url} ...')
         response = requests.post(auth_url, json=payload)
         response.raise_for_status()
+
+        logging.debug('Authentication successful')
         self._token = response.json()["token"]
 
     def get_volume_names(self) -> list[str]:
@@ -147,6 +158,8 @@ class StarfishServer:
         """
 
         storage_url = self.api_url + "storage/"
+
+        logger.info('Fetching volume names from server...')
         response = requests.get(storage_url, headers=self._get_headers())
         response.raise_for_status()
         return [item["name"] for item in response.json()["items"]]
@@ -162,6 +175,8 @@ class StarfishServer:
         """
 
         storage_url = self.api_url + "storage/" + volpath
+
+        logger.info(f'Fetching paths from server under {volpath} ...')
         response = requests.get(storage_url, headers=self._get_headers())
         response.raise_for_status()
         return [item["Basename"] for item in response.json()["items"]]
@@ -197,7 +212,10 @@ class StarfishServer:
             "mount_agent": "None",
         }
 
-        req = requests.post(query_url, params=params, headers=self._get_headers())
-        response = req.json()
+        logging.info('Submitting new API query ...')
+        response = requests.post(query_url, params=params, headers=self._get_headers())
         response.raise_for_status()
-        return AsyncQuery(self.api_url, self._get_headers(), response["query_id"])
+        query_id = response.json()["query_id"]
+
+        logging.debug(f'Query returned with id {query_id}')
+        return AsyncQuery(self.api_url, self._get_headers(), query_id)
