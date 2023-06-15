@@ -3,7 +3,7 @@ import logging
 
 import requests
 
-logger = logging.getLogger('starfish_client')
+logger = logging.getLogger('starfish_api_client')
 
 
 class AsyncQuery:
@@ -181,14 +181,24 @@ class StarfishServer:
         response.raise_for_status()
         return [item["Basename"] for item in response.json()["items"]]
 
-    # Todo: Update docstring and signature after revising the StarfishQuery class
-    def submit_query(self, query: str, group_by: str, volpath: str) -> AsyncQuery:
+    def submit_query(
+        self,
+        query: str,
+        volumes_and_paths: str,
+        group_by: str,
+        format: str = "parent_path fn type size blck ct mt at uid gid mode",
+        sort_by: str = None,
+        limit: int = 100000,
+        force_tag_inherit: bool = False,
+        output_format: str = "json",
+        delimiter: str = ",",
+        escape_paths: bool = False,
+        print_headers: bool = True,
+        size_unit: str = "B",
+        humanize_nested: bool = False,
+        mount_agent: str | None = None,
+    ) -> AsyncQuery:
         """Submit a new API query
-
-        Args:
-            query: The query to execute
-            group_by:
-            volpath:
 
         Returns:
             A ``StarfishQuery`` instance representing the submitted query
@@ -196,20 +206,20 @@ class StarfishServer:
 
         query_url = self.api_url + "async/query/"
         params = {
-            "volumes_and_paths": volpath,
+            "volumes_and_paths": volumes_and_paths,
             "queries": query,
-            "format": "parent_path fn type size blck ct mt at uid gid mode",
-            "sort_by": group_by,
+            "format": format,
+            "sort_by": sort_by if sort_by is not None else group_by,
             "group_by": group_by,
-            "limit": "100000",
-            "force_tag_inherit": "false",
-            "output_format": "json",
-            "delimiter": ",",
-            "escape_paths": "false",
-            "print_headers": "true",
-            "size_unit": "B",
-            "humanize_nested": "false",
-            "mount_agent": "None",
+            "limit": str(limit),
+            "force_tag_inherit": str(force_tag_inherit).lower(),
+            "output_format": output_format,
+            "delimiter": delimiter,
+            "escape_paths": str(escape_paths).lower(),
+            "print_headers": str(print_headers).lower(),
+            "size_unit": size_unit,
+            "humanize_nested": str(humanize_nested).lower(),
+            "mount_agent": str(mount_agent),
         }
 
         logging.info('Submitting new API query ...')
