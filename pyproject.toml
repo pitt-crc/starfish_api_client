@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "starfish-api-client"
+version = "0.1.0"
+description = "A Lightweight Python client for the Starfish API."
+authors = ["Your Name <you@example.com>"]
+license = "GPLv3"
+readme = "README.md"
+packages = [{include = "starfish_api_client"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
