@@ -6,10 +6,18 @@ import requests
 logger = logging.getLogger('starfish_client')
 
 
-class StarfishQuery:
+class AsyncQuery:
     """An asynchronous query submitted to a Starfish API server"""
 
     def __init__(self, api_url: str, headers: dict[str, str], query_id: str) -> None:
+        """Instantiate a new query instance
+
+        Args:
+            api_url: The base API server URL
+            headers: Header values to use when polling for query results
+            query_id: The ID of the submitted query
+        """
+
         self._api_url = api_url
         self._headers = headers
         self._query_id = query_id
@@ -17,15 +25,31 @@ class StarfishQuery:
 
     @property
     def query_id(self) -> str:
+        """Return the ID of the submitted query"""
+
         return self._query_id
 
-    async def _check_query_result_ready(self, query_status_url):
+    async def _check_query_result_ready(self) -> bool:
+        """Check if the query result is ready for consumption
+
+        Returns:
+            The query completion state as a boolean
+        """
+
+        query_status_url = self._api_url + "async/query/" + self.query_id
         status_response = requests.get(query_status_url, self._headers)
         status_response.raise_for_status()
-        ready = status_response.json()["is_done"]
-        return ready
+        return status_response.json()["is_done"]
 
-    async def _get_query_result(self):
+    async def _get_query_result(self) -> dict:
+        """Fetch query results from the API
+
+        This method assumes the caller has already checked the query result is
+        has been prepared by the API and is ready for consumption.
+
+        Returns:
+            The JSON query result
+        """
 
         query_result_url = self._api_url + "async/query_result/" + self.query_id
         response = requests.get(query_result_url, self._headers)
@@ -33,21 +57,36 @@ class StarfishQuery:
         self._result = response.json()
         return self._result
 
-    async def get_result_async(self, sec=3):
+    async def get_result_async(self, polling: int = 3) -> dict:
+        """Return the query result as soon as it is ready
+
+        This method is intended for asynchronous use. See the ``get_result``
+        method for a synchronous version of the method.
+
+        Args:
+            polling: Frequency in seconds to poll the API server for query results
+        """
+
         if self._result is not None:
             return self._result
 
-        query_status_url = self._api_url + "async/query/" + self.query_id
         while True:
-            if await self._check_query_result_ready(query_status_url):
+            if await self._check_query_result_ready():
                 return await self._get_query_result()
 
-            await asyncio.sleep(sec)
+            await asyncio.sleep(polling)
 
-    def get_result(self, sec=3):
-        """Wait for posted query to return result."""
+    def get_result(self, polling: int = 3) -> dict:
+        """Return the query result as soon as it is ready
 
-        return asyncio.run(self.get_result_async(sec=sec))
+        This method is intended for synchronous use. See the ``get_result_async``
+        method for an asynchronous version of the method.
+
+        Args:
+            polling: Frequency in seconds to poll the API server for query results
+        """
+
+        return asyncio.run(self.get_result_async(polling=polling))
 
 
 class StarfishServer:
@@ -128,7 +167,7 @@ class StarfishServer:
         return [item["Basename"] for item in response.json()["items"]]
 
     # Todo: Update docstring and signature after revising the StarfishQuery class
-    def submit_query(self, query: str, group_by: str, volpath: str) -> StarfishQuery:
+    def submit_query(self, query: str, group_by: str, volpath: str) -> AsyncQuery:
         """Submit a new API query
 
         Args:
@@ -161,4 +200,4 @@ class StarfishServer:
         req = requests.post(query_url, params=params, headers=self._get_headers())
         response = req.json()
         response.raise_for_status()
-        return StarfishQuery(self.api_url, self._get_headers(), response["query_id"])
+        return AsyncQuery(self.api_url, self._get_headers(), response["query_id"])
