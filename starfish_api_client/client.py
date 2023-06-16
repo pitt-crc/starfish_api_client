@@ -1,6 +1,6 @@
 import asyncio
 import logging
-
+import urllib.parse
 import requests
 
 logger = logging.getLogger('starfish_api_client')
@@ -36,7 +36,7 @@ class AsyncQuery:
             The query completion state as a boolean
         """
 
-        query_status_url = self._api_url + "async/query/" + self.query_id
+        query_status_url = urllib.parse.urljoin(self._api_url, f'async/query/{self.query_id}')
 
         logging.debug(f'Polling query result for query {self.query_id} ...')
         status_response = requests.get(query_status_url, self._headers)
@@ -53,7 +53,7 @@ class AsyncQuery:
             The JSON query result
         """
 
-        query_result_url = self._api_url + "async/query_result/" + self.query_id
+        query_result_url = urllib.parse.urljoin(self._api_url, f'async/query_result/{self.query_id}')
 
         logging.debug(f'Fetching query result for query {self.query_id} ...')
         response = requests.get(query_result_url, self._headers)
@@ -140,7 +140,7 @@ class StarfishServer:
             HTTPError: When the authentication request errors out or is unsuccessful
         """
 
-        auth_url = self.api_url + "auth/"
+        auth_url = urllib.parse.urljoin(self.api_url, 'auth/')
         payload = {"username": username, "password": password}
 
         logger.info(f'Authenticating against server {self.api_url} ...')
@@ -157,7 +157,7 @@ class StarfishServer:
             A list of volume names returned by the API
         """
 
-        storage_url = self.api_url + "storage/"
+        storage_url = urllib.parse.urljoin(self.api_url, 'storage/')
 
         logger.info('Fetching volume names from server...')
         response = requests.get(storage_url, headers=self._get_headers())
@@ -174,7 +174,7 @@ class StarfishServer:
             A list of directory names as strings
         """
 
-        storage_url = self.api_url + "storage/" + volpath
+        storage_url = urllib.parse.urljoin(self.api_url, f'storage/{volpath}')
 
         logger.info(f'Fetching paths from server under {volpath} ...')
         response = requests.get(storage_url, headers=self._get_headers())
@@ -204,7 +204,7 @@ class StarfishServer:
             A ``StarfishQuery`` instance representing the submitted query
         """
 
-        query_url = self.api_url + "async/query/"
+        query_url = urllib.parse.urljoin(self.api_url, 'async/query/')
         params = {
             "volumes_and_paths": volumes_and_paths,
             "queries": query,

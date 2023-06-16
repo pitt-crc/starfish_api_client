@@ -1,5 +1,7 @@
 import importlib.metadata
 
+from .client import *
+
 try:
     __version__ = importlib.metadata.version('quota-notifier')
 
