@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import urllib.parse
+
 import requests
 
 logger = logging.getLogger('starfish_api_client')
@@ -9,19 +10,21 @@ logger = logging.getLogger('starfish_api_client')
 class AsyncQuery:
     """An asynchronous query submitted to a Starfish API server"""
 
-    def __init__(self, api_url: str, headers: dict[str, str], query_id: str) -> None:
+    def __init__(self, api_url: str, headers: dict[str, str], query_id: str, verify=True) -> None:
         """Instantiate a new query instance
 
         Args:
             api_url: The base API server URL
             headers: Header values to use when polling for query results
             query_id: The ID of the submitted query
+            verify: Require successful SSL verification
         """
 
         self._api_url = api_url
         self._headers = headers
         self._query_id = query_id
         self._result = None
+        self._verify = verify
 
     @property
     def query_id(self) -> str:
@@ -39,7 +42,7 @@ class AsyncQuery:
         query_status_url = urllib.parse.urljoin(self._api_url, f'async/query/{self.query_id}')
 
         logging.debug(f'Polling query result for query {self.query_id} ...')
-        status_response = requests.get(query_status_url, self._headers)
+        status_response = requests.get(query_status_url, self._headers, verify=self._verify)
         status_response.raise_for_status()
         return status_response.json()["is_done"]
 
@@ -56,7 +59,7 @@ class AsyncQuery:
         query_result_url = urllib.parse.urljoin(self._api_url, f'async/query_result/{self.query_id}')
 
         logging.debug(f'Fetching query result for query {self.query_id} ...')
-        response = requests.get(query_result_url, self._headers)
+        response = requests.get(query_result_url, self._headers, verify=self._verify)
         response.raise_for_status()
         self._result = response.json()
         return self._result
@@ -99,15 +102,17 @@ class AsyncQuery:
 class StarfishServer:
     """Class for interacting with a Starfish API server."""
 
-    def __init__(self, api_url: str) -> None:
+    def __init__(self, api_url: str, verify=True) -> None:
         """Initialize a new Server instance
 
         Args:
             api_url: The Starfish API URL, typically ending in /api/
+            verify: Require successful SSL verification
         """
 
         self.api_url = api_url
         self._token = None
+        self.verify = verify
 
     def _get_headers(self) -> dict:
         """Return headers to include when submitting API requests
@@ -144,7 +149,7 @@ class StarfishServer:
         payload = {"username": username, "password": password}
 
         logger.info(f'Authenticating against server {self.api_url} ...')
-        response = requests.post(auth_url, json=payload)
+        response = requests.post(auth_url, json=payload, verify=self.verify)
         response.raise_for_status()
 
         logging.debug('Authentication successful')
@@ -160,7 +165,7 @@ class StarfishServer:
         storage_url = urllib.parse.urljoin(self.api_url, 'storage/')
 
         logger.info('Fetching volume names from server...')
-        response = requests.get(storage_url, headers=self._get_headers())
+        response = requests.get(storage_url, headers=self._get_headers(), verify=self.verify)
         response.raise_for_status()
         return [item["name"] for item in response.json()["items"]]
 
@@ -177,7 +182,7 @@ class StarfishServer:
         storage_url = urllib.parse.urljoin(self.api_url, f'storage/{volpath}')
 
         logger.info(f'Fetching paths from server under {volpath} ...')
-        response = requests.get(storage_url, headers=self._get_headers())
+        response = requests.get(storage_url, headers=self._get_headers(), verify=self.verify)
         response.raise_for_status()
         return [item["Basename"] for item in response.json()["items"]]
 
@@ -223,7 +228,7 @@ class StarfishServer:
         }
 
         logging.info('Submitting new API query ...')
-        response = requests.post(query_url, params=params, headers=self._get_headers())
+        response = requests.post(query_url, params=params, headers=self._get_headers(), verify=self.verify)
         response.raise_for_status()
         query_id = response.json()["query_id"]
 
