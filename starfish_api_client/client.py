@@ -169,66 +169,38 @@ class StarfishServer:
         response.raise_for_status()
         return [item["name"] for item in response.json()["items"]]
 
-    def get_subpaths(self, volpath: str) -> list[str]:
+    def get_subpaths(self, volume_and_paths: str) -> list[str]:
         """Return a list of top level directories located under the given volume path
 
         Args:
-            volpath: The volume and path.
+            volume_and_paths: Name of the volume and path in ``volume:path`` format
 
         Returns:
             A list of directory names as strings
         """
 
-        storage_url = urllib.parse.urljoin(self.api_url, f'storage/{volpath}')
+        storage_url = urllib.parse.urljoin(self.api_url, f'storage/{volume_and_paths}')
 
-        logger.info(f'Fetching paths from server under {volpath} ...')
+        logger.info(f'Fetching paths from server under {volume_and_paths} ...')
         response = requests.get(storage_url, headers=self._get_headers(), verify=self.verify)
         response.raise_for_status()
         return [item["Basename"] for item in response.json()["items"]]
 
-    def submit_query(
-        self,
-        query: str,
-        volumes_and_paths: str,
-        group_by: str,
-        format: str = "parent_path fn type size blck ct mt at uid gid mode",
-        sort_by: str = None,
-        limit: int = 100000,
-        force_tag_inherit: bool = False,
-        output_format: str = "json",
-        delimiter: str = ",",
-        escape_paths: bool = False,
-        print_headers: bool = True,
-        size_unit: str = "B",
-        humanize_nested: bool = False,
-        mount_agent: str | None = None,
-    ) -> AsyncQuery:
+    def submit_query(self, **kwargs) -> AsyncQuery:
         """Submit a new API query
+
+        Valid arguments include all query-string parameters supported by the
+        API ``query`` endpoint. See the official Starfish API documentation
+        for more details.
 
         Returns:
             A ``StarfishQuery`` instance representing the submitted query
         """
 
         query_url = urllib.parse.urljoin(self.api_url, 'async/query/')
-        params = {
-            "volumes_and_paths": volumes_and_paths,
-            "queries": query,
-            "format": format,
-            "sort_by": sort_by if sort_by is not None else group_by,
-            "group_by": group_by,
-            "limit": str(limit),
-            "force_tag_inherit": str(force_tag_inherit).lower(),
-            "output_format": output_format,
-            "delimiter": delimiter,
-            "escape_paths": str(escape_paths).lower(),
-            "print_headers": str(print_headers).lower(),
-            "size_unit": size_unit,
-            "humanize_nested": str(humanize_nested).lower(),
-            "mount_agent": str(mount_agent),
-        }
 
         logging.info('Submitting new API query ...')
-        response = requests.post(query_url, params=params, headers=self._get_headers(), verify=self.verify)
+        response = requests.post(query_url, params=kwargs, headers=self._get_headers(), verify=self.verify)
         response.raise_for_status()
         query_id = response.json()["query_id"]
 
