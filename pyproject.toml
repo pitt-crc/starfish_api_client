@@ -11,7 +11,14 @@ description = "A Lightweight Python client for the Starfish API."
 homepage = "https://github.com/pitt-crc/starfish_api_client"
 repository = "https://github.com/pitt-crc/starfish_api_client"
 documentation = "https://crc-pages.pitt.edu/starfish_api_client/"
-keywords = ["disk", "usage", "quota", "notify", "email", ]
+keywords = ["starfish", "api", "client" ]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3"
+"Typing :: Typed"
+]
 
 [tool.poetry.dependencies]
 python = "^3.8"
