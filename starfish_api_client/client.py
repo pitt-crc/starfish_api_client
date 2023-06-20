@@ -1,7 +1,9 @@
 import asyncio
 import logging
+import ssl
 import urllib.parse
 
+import aiohttp
 import requests
 
 logger = logging.getLogger('starfish_api_client')
@@ -24,7 +26,9 @@ class AsyncQuery:
         self._headers = headers
         self._query_id = query_id
         self._result = None
-        self._verify = verify
+
+        self._ssl_context = ssl.SSLContext()
+        self._ssl_context.verify_mode = ssl.CERT_REQUIRED if verify else ssl.CERT_NONE
 
     @property
     def query_id(self) -> str:
@@ -42,9 +46,11 @@ class AsyncQuery:
         query_status_url = urllib.parse.urljoin(self._api_url, f'async/query/{self.query_id}')
 
         logging.debug(f'Polling query result for query {self.query_id} ...')
-        status_response = requests.get(query_status_url, self._headers, verify=self._verify)
-        status_response.raise_for_status()
-        return status_response.json()["is_done"]
+        async with aiohttp.ClientSession() as session:
+            async with session.get(query_status_url, headers=self._headers, ssl=self._ssl_context) as response:
+                response.raise_for_status()
+                json = await response.json()
+                return json["is_done"]
 
     async def _get_query_result(self) -> dict:
         """Fetch query results from the API
@@ -59,10 +65,11 @@ class AsyncQuery:
         query_result_url = urllib.parse.urljoin(self._api_url, f'async/query_result/{self.query_id}')
 
         logging.debug(f'Fetching query result for query {self.query_id} ...')
-        response = requests.get(query_result_url, self._headers, verify=self._verify)
-        response.raise_for_status()
-        self._result = response.json()
-        return self._result
+        async with aiohttp.ClientSession() as session:
+            async with session.get(query_result_url, headers=self._headers, ssl=self._ssl_context) as response:
+                response.raise_for_status()
+                self._result = await response.json()
+                return self._result
 
     async def get_result_async(self, polling: int = 3) -> dict:
         """Return the query result as soon as it is ready
@@ -205,4 +212,4 @@ class StarfishServer:
         query_id = response.json()["query_id"]
 
         logging.debug(f'Query returned with id {query_id}')
-        return AsyncQuery(self.api_url, self._get_headers(), query_id)
+        return AsyncQuery(self.api_url, self._get_headers(), query_id, verify=self.verify)

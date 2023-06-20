@@ -16,6 +16,7 @@ keywords = ["disk", "usage", "quota", "notify", "email", ]
 [tool.poetry.dependencies]
 python = "^3.8"
 requests = "^2.31.0"
+aiohttp = {extras = ["speedups"], version = "^3.8.4"}
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "6.2.1"
