@@ -203,7 +203,7 @@ class StarfishServer:
         response.raise_for_status()
         return [item["Basename"] for item in response.json()["items"]]
 
-    async def submit_query_async(self, **kwargs) -> AsyncQuery:
+    def submit_query(self, **kwargs) -> AsyncQuery:
         """Submit a new API query
 
         Valid arguments include all query-string parameters supported by the
