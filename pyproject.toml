@@ -14,7 +14,7 @@ documentation = "https://crc-pages.pitt.edu/starfish_api_client/"
 keywords = ["starfish", "api", "client" ]
 classifiers = [
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "License :: OSI Approved :: MIT License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
     "Typing :: Typed"
