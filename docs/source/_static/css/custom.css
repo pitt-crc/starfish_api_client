@@ -1,0 +1,19 @@
+.wy-nav-content {
+  max-width: 1000px;
+}
+
+p {
+  text-align: justify;
+}
+
+.wy-table-responsive p {
+  text-align: unset;
+}
+
+.wy-table-responsive table td {
+  white-space: normal !important;
+}
+
+.wy-table-responsive {
+  overflow: visible !important;
+}

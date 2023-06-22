@@ -1,3 +1,13 @@
+"""The ``client`` module provides two classes for interacting with the
+Starfish API.  The ``StarfishServer`` class is responsible for handling client
+authentication and query submission. Submitted queries are returned as
+``AsyncQuery`` objects which monitor the submitted query status and return
+query results as they become available.
+
+Module Contents
+---------------
+"""
+
 import asyncio
 import logging
 import ssl
